@@ -1,26 +1,172 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* Crypto-themed dark design system */
+    --background: 220 13% 9%;
+    --foreground: 220 15% 95%;
+
+    --card: 220 13% 11%;
+    --card-foreground: 220 15% 95%;
+
+    --popover: 220 13% 11%;
+    --popover-foreground: 220 15% 95%;
+
+    --primary: 217 91% 60%;
+    --primary-foreground: 220 13% 9%;
+
+    --secondary: 220 13% 15%;
+    --secondary-foreground: 220 15% 85%;
+
+    --muted: 220 13% 15%;
+    --muted-foreground: 220 9% 55%;
+
+    --accent: 142 76% 36%;
+    --accent-foreground: 220 15% 95%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 220 15% 95%;
+
+    --border: 220 13% 20%;
+    --input: 220 13% 15%;
+    --ring: 217 91% 60%;
+
+    --radius: 0.75rem;
+
+    /* Crypto-specific colors */
+    --success: 142 76% 36%;
+    --success-foreground: 220 15% 95%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 220 13% 9%;
+    --crypto-green: 142 76% 36%;
+    --crypto-red: 0 84% 60%;
+    
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(217 91% 70%));
+    --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 46%));
+    --gradient-background: linear-gradient(180deg, hsl(220 13% 9%), hsl(220 13% 7%));
+    
+    /* Shadows */
+    --shadow-glow: 0 0 20px hsl(217 91% 60% / 0.3);
+    --shadow-card: 0 4px 24px hsl(220 13% 5% / 0.4);
+  }
+
+  .dark {
+    /* Same as root since we're using dark theme by default */
+    --background: 220 13% 9%;
+    --foreground: 220 15% 95%;
+    --card: 220 13% 11%;
+    --card-foreground: 220 15% 95%;
+    --popover: 220 13% 11%;
+    --popover-foreground: 220 15% 95%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 220 13% 9%;
+    --secondary: 220 13% 15%;
+    --secondary-foreground: 220 15% 85%;
+    --muted: 220 13% 15%;
+    --muted-foreground: 220 9% 55%;
+    --accent: 142 76% 36%;
+    --accent-foreground: 220 15% 95%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 220 15% 95%;
+    --border: 220 13% 20%;
+    --input: 220 13% 15%;
+    --ring: 217 91% 60%;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    background: hsl(var(--background));
+  }
+  
+  /* Apply dark theme by default */
+  html {
+    @apply dark;
+  }
+
+  /* Container styling for the app */
+  .container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+
+  /* Card styling with crypto theme */
+  .card {
+    padding: 2em;
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+  }
+
+  /* Logo animations and effects */
+  .logo {
+    height: 6em;
+    padding: 1.5em;
+    will-change: filter;
+    transition: filter 300ms;
+  }
+
+  .logo:hover {
+    filter: drop-shadow(0 0 2em hsl(var(--primary) / 0.7));
+  }
+
+  .logo.crypto:hover {
+    filter: drop-shadow(0 0 2em hsl(var(--accent) / 0.7));
+  }
+
+  @keyframes logo-spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .logo-animated {
+      animation: logo-spin infinite 20s linear;
+    }
+  }
+
+  /* Crypto-specific utility classes */
+  .text-success {
+    color: hsl(var(--crypto-green));
+  }
+
+  .text-danger {
+    color: hsl(var(--crypto-red));
+  }
+
+  .bg-success {
+    background-color: hsl(var(--crypto-green));
+  }
+
+  .bg-danger {
+    background-color: hsl(var(--crypto-red));
+  }
+
+  /* Glowing effects for interactive elements */
+  .glow-primary:hover {
+    box-shadow: var(--shadow-glow);
+  }
+
+  /* Smooth transitions for all interactive elements */
+  .transition-all {
+    transition: all 0.3s ease;
+  }
 }

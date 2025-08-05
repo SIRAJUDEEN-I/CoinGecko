@@ -1,103 +1,214 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useEffect, useMemo } from 'react';
+import Layout from '@/components/Layout';
+import CoinTable from '@/components/CoinTable';
+import SearchAndFilters from '@/components/SearchAndFilters';
+import { Button } from '@/components/ui/button';
+import { getCoins } from '@/services/coingecko';
+import { Coin } from '@/types/crypto';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [coins, setCoins] = useState<Coin[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('market_cap_desc');
+  const [priceRange, setPriceRange] = useState('all');
+  const [changeFilter, setChangeFilter] = useState('all');
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const coinsPerPage = 50;
+
+  // Fetch coins data
+  useEffect(() => {
+    const fetchCoins = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const data = await getCoins(currentPage, coinsPerPage);
+        setCoins(data);
+      } catch (err) {
+        setError('Failed to fetch market data. Please try again later.');
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCoins();
+  }, [currentPage]);
+
+  // Filter and sort coins
+  const filteredAndSortedCoins = useMemo(() => {
+    let filtered = [...coins];
+
+    // Search filter
+    if (searchTerm) {
+      filtered = filtered.filter(coin =>
+        coin.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        coin.symbol.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Price range filter
+    if (priceRange !== 'all') {
+      filtered = filtered.filter(coin => {
+        const price = coin.current_price;
+        switch (priceRange) {
+          case 'under_1':
+            return price < 1;
+          case '1_to_10':
+            return price >= 1 && price < 10;
+          case '10_to_100':
+            return price >= 10 && price < 100;
+          case '100_to_1000':
+            return price >= 100 && price < 1000;
+          case 'over_1000':
+            return price >= 1000;
+          default:
+            return true;
+        }
+      });
+    }
+
+    // Change filter
+    if (changeFilter !== 'all') {
+      filtered = filtered.filter(coin => {
+        const change = coin.price_change_percentage_24h;
+        switch (changeFilter) {
+          case 'gainers':
+            return change > 0;
+          case 'losers':
+            return change < 0;
+          case 'over_5':
+            return change > 5;
+          case 'over_10':
+            return change > 10;
+          case 'under_neg5':
+            return change < -5;
+          case 'under_neg10':
+            return change < -10;
+          default:
+            return true;
+        }
+      });
+    }
+
+    // Sort
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'market_cap_desc':
+          return b.market_cap - a.market_cap;
+        case 'market_cap_asc':
+          return a.market_cap - b.market_cap;
+        case 'price_desc':
+          return b.current_price - a.current_price;
+        case 'price_asc':
+          return a.current_price - b.current_price;
+        case 'volume_desc':
+          return b.total_volume - a.total_volume;
+        case 'percent_change_desc':
+          return b.price_change_percentage_24h - a.price_change_percentage_24h;
+        case 'percent_change_asc':
+          return a.price_change_percentage_24h - b.price_change_percentage_24h;
+        default:
+          return 0;
+      }
+    });
+
+    return filtered;
+  }, [coins, searchTerm, sortBy, priceRange, changeFilter]);
+
+  if (error) {
+    return (
+      <Layout>
+        <div className="text-center py-12">
+          <div className="bg-crypto-red/10 border border-crypto-red/20 rounded-lg p-6 max-w-md mx-auto">
+            <h2 className="text-lg font-semibold mb-2">Error Loading Data</h2>
+            <p className="text-muted-foreground mb-4">{error}</p>
+            <Button onClick={() => window.location.reload()}>
+              Try Again
+            </Button>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      </Layout>
+    );
+  }
+
+  return (
+    <Layout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold mb-2 bg-gradient-primary bg-clip-text text-transparent">
+            Cryptocurrency Markets
+          </h1>
+          <p className="text-muted-foreground">
+            Track the latest prices and market data for cryptocurrencies
+          </p>
+        </div>
+
+        {/* Search and Filters */}
+        <SearchAndFilters
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          sortBy={sortBy}
+          onSortChange={setSortBy}
+          priceRange={priceRange}
+          onPriceRangeChange={setPriceRange}
+          changeFilter={changeFilter}
+          onChangeFilterChange={setChangeFilter}
+        />
+
+        {/* Results Count */}
+        {!isLoading && (
+          <div className="text-sm text-muted-foreground">
+            Showing {filteredAndSortedCoins.length} of {coins.length} coins
+          </div>
+        )}
+
+        {/* Coins Table */}
+        {isLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-crypto-accent"></div>
+          </div>
+        ) : (
+          <CoinTable coins={filteredAndSortedCoins} />
+        )}
+
+        {/* Pagination */}
+        {!isLoading && !searchTerm && (
+          <div className="flex justify-center items-center space-x-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4 mr-2" />
+              Previous
+            </Button>
+            
+            <span className="text-sm text-muted-foreground">
+              Page {currentPage}
+            </span>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => prev + 1)}
+              disabled={filteredAndSortedCoins.length < coinsPerPage}
+            >
+              Next
+              <ChevronRight className="h-4 w-4 ml-2" />
+            </Button>
+          </div>
+        )}
+      </div>
+    </Layout>
   );
 }
